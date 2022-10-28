@@ -9,6 +9,9 @@ public partial class Form1 : Form
      */
 
     HubConnection hubConnection;
+    private string _codeReceive;
+    private bool _connected = false;
+    private bool _writeing = false;
 
     public Form1()
     {
@@ -19,6 +22,7 @@ public partial class Form1 : Form
     {
         // Create connection and events.
         ApiConnection(receiveTxt, liveUrlTxt.Text);
+        SetText(liveKeyTxt, Utils.KeyGenerator.GeneratePassword(10));
     }
 
     /// <summary>
@@ -36,6 +40,11 @@ public partial class Form1 : Form
         hubConnection.Reconnecting += (sender) =>
         {
             SetText(receiveTxt, "Attempt to reconnect..");
+            updateLiveCode.Stop();
+            updateLiveCode.Enabled = false;
+            editorWrite.Stop();
+            editorWrite.Enabled = false;
+            _connected = false;
             return Task.CompletedTask;
         };
 
@@ -43,6 +52,11 @@ public partial class Form1 : Form
         hubConnection.Reconnected += (sender) =>
         {
             SetText(receiveTxt, "Reconnected...");
+            _connected = true;
+            updateLiveCode.Enabled = true;
+            updateLiveCode.Start();
+            editorWrite.Enabled = true;
+            editorWrite.Start();
             return Task.CompletedTask;
         };
 
@@ -52,10 +66,14 @@ public partial class Form1 : Form
             MethodInvoker setText = new MethodInvoker(() =>
             {
                 receiveTxt.Text += $"{message}\n";
-                liveCodeTxt.Enabled = false;
                 connectBtn.Enabled = true;
             });
             receiveTxt.BeginInvoke(setText);
+            _connected = false;
+            updateLiveCode.Stop();
+            updateLiveCode.Enabled = false;
+            editorWrite.Stop();
+            editorWrite.Enabled = false;
             return Task.CompletedTask;
         };
     }
@@ -67,10 +85,15 @@ public partial class Form1 : Form
     /// <param name="e"></param>
     private async void connectBtn_Click(object sender, EventArgs e)
     {
+        if (string.IsNullOrEmpty(userNameTxt.Text))
+        {
+            MessageBox.Show("No live share key provided!");
+            return;
+        }
+
         hubConnection.On<string>("GetSend", (code) =>
         {
-            if (code != liveCodeTxt.Text)
-                SetTextLive(liveCodeTxt, $"{code}\n");
+            _codeReceive = code;
         });
 
         try
@@ -83,6 +106,12 @@ public partial class Form1 : Form
                 liveCodeTxt.Enabled = true;
             });
             receiveTxt.BeginInvoke(setText);
+            await hubConnection.InvokeAsync("GetSendCode", userNameTxt.Text, string.Empty);
+            _connected = true;
+            updateLiveCode.Enabled = true;
+            updateLiveCode.Start();
+            editorWrite.Enabled = true;
+            editorWrite.Start();
         }
         catch (Exception ex)
         {
@@ -99,7 +128,7 @@ public partial class Form1 : Form
     {
         MethodInvoker setText = new MethodInvoker(() =>
         {
-            textBox.Text = text;
+            textBox.Text = text + "\n";
         });
         textBox.BeginInvoke(setText);
     }
@@ -113,7 +142,6 @@ public partial class Form1 : Form
     {
         MethodInvoker setText = new MethodInvoker(() =>
         {
-            textBox.ScrollToCaret();
             textBox.Text = text;
             textBox.ScrollToCaret();
         });
@@ -127,7 +155,9 @@ public partial class Form1 : Form
     /// <param name="e"></param>
     private void liveCodeTxt_TextChanged(object sender, EventArgs e)
     {
-        Task.Run(() => SendReceiveData());
+        _writeing = false;
+        if (_connected)
+            Task.Run(() => SendReceiveData());
     }
 
 
@@ -138,11 +168,80 @@ public partial class Form1 : Form
     {
         try
         {
-            await hubConnection.InvokeAsync("GetSendCode", liveCodeTxt.Text);
+            SetText(receiveTxt, hubConnection.ConnectionId);
+            await hubConnection.InvokeAsync("GetSendCode", userNameTxt.Text, liveCodeTxt.Text);
         }
         catch (Exception ex)
         {
             SetText(receiveTxt, $"Error: {ex.ToString()}");
         }
+    }
+
+    /// <summary>
+    /// Close API connection button.
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name="e"></param>
+    private void button1_Click(object sender, EventArgs e)
+    {
+        CloseConnection();
+    }
+
+    /// <summary>
+    /// Update texteditor from live share on real time.
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name="e"></param>
+    private void updateLiveCode_Tick(object sender, EventArgs e)
+    {
+        try
+        {
+            if (liveCodeTxt.Text != _codeReceive &&
+                _codeReceive.Length > 0 && _writeing)
+            {
+                SetTextLive(liveCodeTxt, _codeReceive);
+            }
+        }
+        catch { 
+        // Skip error if is null.
+        }
+    }
+
+    /// <summary>
+    /// Set flag for update editor if user does not write in it.
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name="e"></param>
+    private void editorWrite_Tick(object sender, EventArgs e)
+    {
+        _writeing = true;
+    }
+
+
+    /// <summary>
+    /// Close API connection on form close event.
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name="e"></param>
+    private void Form1_FormClosed(object sender, FormClosedEventArgs e)
+    {
+        CloseConnection();
+    }
+
+    /// <summary>
+    /// Close API connection and stop timers.
+    /// </summary>
+    private void CloseConnection()
+    {
+        receiveTxt.Clear();
+        if (hubConnection != null)
+            hubConnection.StopAsync();
+
+        // Stop live code share timer.
+        updateLiveCode.Stop();
+        updateLiveCode.Enabled = false;
+
+        editorWrite.Stop();
+        editorWrite.Enabled = false;
     }
 }

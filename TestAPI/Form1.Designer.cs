@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
             this.liveCodeTxt = new System.Windows.Forms.TextBox();
             this.label1 = new System.Windows.Forms.Label();
             this.settingsGb = new System.Windows.Forms.GroupBox();
@@ -40,13 +41,16 @@
             this.label2 = new System.Windows.Forms.Label();
             this.receiveTxt = new System.Windows.Forms.TextBox();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.button1 = new System.Windows.Forms.Button();
+            this.updateLiveCode = new System.Windows.Forms.Timer(this.components);
+            this.timer1 = new System.Windows.Forms.Timer(this.components);
+            this.editorWrite = new System.Windows.Forms.Timer(this.components);
             this.settingsGb.SuspendLayout();
             this.groupBox1.SuspendLayout();
             this.SuspendLayout();
             // 
             // liveCodeTxt
             // 
-            this.liveCodeTxt.Enabled = false;
             this.liveCodeTxt.Location = new System.Drawing.Point(12, 33);
             this.liveCodeTxt.Multiline = true;
             this.liveCodeTxt.Name = "liveCodeTxt";
@@ -112,16 +116,15 @@
             this.userNameTxt.Name = "userNameTxt";
             this.userNameTxt.Size = new System.Drawing.Size(281, 23);
             this.userNameTxt.TabIndex = 3;
-            this.userNameTxt.Text = "Test_user";
             // 
             // label3
             // 
             this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(14, 70);
+            this.label3.Location = new System.Drawing.Point(23, 70);
             this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(68, 15);
+            this.label3.Size = new System.Drawing.Size(59, 15);
             this.label3.TabIndex = 2;
-            this.label3.Text = "User Name:";
+            this.label3.Text = "Enter Key:";
             // 
             // liveUrlTxt
             // 
@@ -158,11 +161,31 @@
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Recive API Data:";
             // 
+            // button1
+            // 
+            this.button1.Location = new System.Drawing.Point(557, 239);
+            this.button1.Name = "button1";
+            this.button1.Size = new System.Drawing.Size(75, 23);
+            this.button1.TabIndex = 6;
+            this.button1.Text = "Disconnect";
+            this.button1.UseVisualStyleBackColor = true;
+            this.button1.Click += new System.EventHandler(this.button1_Click);
+            // 
+            // updateLiveCode
+            // 
+            this.updateLiveCode.Tick += new System.EventHandler(this.updateLiveCode_Tick);
+            // 
+            // editorWrite
+            // 
+            this.editorWrite.Interval = 600;
+            this.editorWrite.Tick += new System.EventHandler(this.editorWrite_Tick);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(800, 450);
+            this.Controls.Add(this.button1);
             this.Controls.Add(this.groupBox1);
             this.Controls.Add(this.settingsGb);
             this.Controls.Add(this.label1);
@@ -172,6 +195,7 @@
             this.Name = "Form1";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "CIARE Live Share API Test";
+            this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.Form1_FormClosed);
             this.Load += new System.EventHandler(this.Form1_Load);
             this.settingsGb.ResumeLayout(false);
             this.settingsGb.PerformLayout();
@@ -196,5 +220,9 @@
         private Label label2;
         private TextBox receiveTxt;
         private GroupBox groupBox1;
+        private Button button1;
+        private System.Windows.Forms.Timer updateLiveCode;
+        private System.Windows.Forms.Timer timer1;
+        private System.Windows.Forms.Timer editorWrite;
     }
 }

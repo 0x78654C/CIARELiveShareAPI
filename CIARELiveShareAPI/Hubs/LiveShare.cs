@@ -12,7 +12,6 @@ public class LiveShare : Hub
     {
         try
         {
-            GlobalVariables.userKey = key;
             var connectionId = Context.ConnectionId;
             var listKeys = GlobalVariables.listKeys;
             var countKeys = listKeys.Where(x => x.Contains(key)).Count();

@@ -1,14 +1,17 @@
 using CIARELiveShareAPI.Data;
 using CIARELiveShareAPI.Hubs;
+using CIARELiveShareAPI.Utils;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.ResponseCompression;
+using Microsoft.AspNetCore.SignalR;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
+builder.Services.AddSingleton<IUserIdProvider, NameUserIdProvider>();
 builder.Services.AddResponseCompression(opts =>
 { 
     opts.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(
@@ -26,11 +29,9 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
 app.UseStaticFiles();
-
 app.UseRouting();
-
+app.UseAuthorization();
 app.MapBlazorHub();
 app.MapHub<LiveShare>("/live");
 app.MapFallbackToPage("/_Host");

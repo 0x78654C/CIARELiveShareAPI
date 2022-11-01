@@ -8,28 +8,28 @@ namespace CIARELiveShareAPI.Hubs;
 
 public class LiveShare : Hub
 {
-    public void GetSendCode(string key, string code)
+    public void GetSendCode(string sessionId, string code)
     {
         try
         {
             var connectionId = Context.ConnectionId;
             var listKeys = GlobalVariables.listKeys;
-            var countKeys = listKeys.Where(x => x.Contains(key)).Count();
-            var countId = listKeys.Where(x => x.Contains(key)).Count();
-            var patern = $"{key}|{connectionId}";
-            if (countKeys < 2)
+            var countSessionIds = listKeys.Where(x => x.Contains(sessionId)).Count();
+            var countId = listKeys.Where(x => x.Contains(connectionId)).Count();
+            var patern = $"{sessionId}|{connectionId}";
+            if (countSessionIds < 2 && countId < 1)
                 listKeys.Add(patern);
-            foreach (var keyCon in listKeys)
+            foreach (var sessionCon in listKeys)
             {
-                string keyP = keyCon.Split('|')[0];
-                string con = keyCon.Split('|')[1];
-                if (keyP == key)
+                string sessionKey = sessionCon.Split('|')[0];
+                string con = sessionCon.Split('|')[1];
+                if (sessionKey == sessionId)
                     Clients.Client(con).SendAsync("GetSend", code);
             }
         }
         catch (Exception ex)
         {
-            //Console.WriteLine(ex.ToString());
+            Console.WriteLine(ex.ToString());
         }
     }
 
@@ -41,8 +41,15 @@ public class LiveShare : Hub
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
         Console.WriteLine($"{Context.ConnectionId} - Disconnected");
-        if (GlobalVariables.listKeys.Count > 0)
-            GlobalVariables.listKeys.RemoveAll(x => x.Contains(Context.ConnectionId));
+        try
+        {
+            if (GlobalVariables.listKeys.Count > 0)
+                GlobalVariables.listKeys.RemoveAll(x => x.Contains(Context.ConnectionId));
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+        }
         await base.OnDisconnectedAsync(exception);
     }
 

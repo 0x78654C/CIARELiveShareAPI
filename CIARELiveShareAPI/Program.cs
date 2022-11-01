@@ -1,10 +1,16 @@
 using CIARELiveShareAPI.Data;
 using CIARELiveShareAPI.Hubs;
 using CIARELiveShareAPI.Utils;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Options;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,6 +21,12 @@ builder.Services.AddResponseCompression(opts =>
 { 
     opts.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(
         new[] { "application/octet-stream" });
+});
+
+// Keep alive set to 20 seconds.
+builder.Services.AddSignalR(hubOptions =>
+{
+    hubOptions.KeepAliveInterval = TimeSpan.FromSeconds(20.00);
 });
 
 var app = builder.Build();
@@ -30,7 +42,6 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
-app.UseAuthorization();
 app.MapBlazorHub();
 app.MapHub<LiveShare>("/live");
 app.MapFallbackToPage("/_Host");

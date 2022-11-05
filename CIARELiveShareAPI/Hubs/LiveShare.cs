@@ -23,8 +23,11 @@ public class LiveShare : Hub
             {
                 string sessionKey = sessionCon.Split('|')[0];
                 string con = sessionCon.Split('|')[1];
-                if (sessionKey == sessionId)
+                if (sessionKey == sessionId && con != connectionId)
+                {
                     Clients.Client(con).SendAsync("GetSend", code);
+                  //  Console.WriteLine($"Sent to: {con}");
+                }
             }
         }
         catch (Exception ex)

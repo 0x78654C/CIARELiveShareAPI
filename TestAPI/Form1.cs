@@ -13,8 +13,8 @@ public partial class Form1 : Form
     private string _codeReceive;
     private bool _connected = false;
     private bool _writeing = false;
-    private string? _sessionId="";
-    private string? _encryptionPassword="";
+    private string? _sessionId = "";
+    private string? _encryptionPassword;
     public Form1()
     {
         InitializeComponent();
@@ -24,7 +24,7 @@ public partial class Form1 : Form
     {
         // Create connection and events.
         ApiConnection(receiveTxt, liveUrlTxt.Text);
-        SetText(sessionIdTxt, KeyGenerator.GeneratePassword(16, false, false, false,true));
+        SetText(sessionIdTxt, KeyGenerator.GeneratePassword(16, false, false, false, true));
     }
 
     /// <summary>
@@ -100,7 +100,7 @@ public partial class Form1 : Form
 
         hubConnection.On<string>("GetSend", (code) =>
         {
-            _codeReceive = code;
+            SetLiveCode(_encryptionPassword, code, liveCodeTxt, _writeing);
         });
 
         try
@@ -150,12 +150,8 @@ public partial class Form1 : Form
     /// <param name="text"></param>
     private void SetTextLive(TextBox textBox, string text)
     {
-        MethodInvoker setText = new MethodInvoker(() =>
-        {
-            textBox.Text = text;
-            textBox.ScrollToCaret();
-        });
-        textBox.BeginInvoke(setText);
+        textBox.Text = text;
+        textBox.ScrollToCaret();
     }
 
     /// <summary>
@@ -168,14 +164,14 @@ public partial class Form1 : Form
         Task.Delay(10);
         _writeing = false;
         if (_connected)
-            Task.Run(() => SendData(_encryptionPassword,_sessionId,liveCodeTxt.Text));
+            SendData(_encryptionPassword, _sessionId, liveCodeTxt.Text);
     }
 
 
     /// <summary>
     /// Send/Receive data event starter.
     /// </summary>
-    private async void SendData(string password,string sessionId, string codeEditor)
+    private async void SendData(string password, string sessionId, string codeEditor)
     {
         try
         {
@@ -206,7 +202,7 @@ public partial class Form1 : Form
     /// <param name="e"></param>
     private void updateLiveCode_Tick(object sender, EventArgs e)
     {
-        SetLiveCode(_encryptionPassword, _codeReceive, liveCodeTxt, _writeing);
+        //SetLiveCode(_encryptionPassword, _codeReceive, liveCodeTxt, _writeing);
     }
 
     /// <summary>
@@ -220,8 +216,7 @@ public partial class Form1 : Form
     {
         try
         {
-            if (codeEditor.Text != codeReceived &&
-                codeReceived.Length > 0 && writer)
+            if (writer)
             {
                 string decrypt = AESEncryption.Decrypt(codeReceived, password);
                 SetTextLive(codeEditor, decrypt);
@@ -240,7 +235,7 @@ public partial class Form1 : Form
     /// <param name="e"></param>
     private void editorWrite_Tick(object sender, EventArgs e)
     {
-        _writeing = true;
+         _writeing = true;
     }
 
 
@@ -251,7 +246,7 @@ public partial class Form1 : Form
     /// <param name="e"></param>
     private void Form1_FormClosed(object sender, FormClosedEventArgs e)
     {
-       Task.Run(()=> CloseConnection());
+        Task.Run(() => CloseConnection());
     }
 
     /// <summary>
@@ -261,7 +256,7 @@ public partial class Form1 : Form
     {
         receiveTxt.Clear();
         if (hubConnection != null)
-          await hubConnection.StopAsync();
+            await hubConnection.StopAsync();
 
         // Stop live code share timer.
         updateLiveCode.Stop();
@@ -300,7 +295,8 @@ public partial class Form1 : Form
 
             hubConnection.On<string>("GetSend", (code) =>
             {
-                _codeReceive = code;
+                _writeing = true;
+                SetLiveCode(_encryptionPassword, code, liveCodeTxt, _writeing);
             });
 
             try

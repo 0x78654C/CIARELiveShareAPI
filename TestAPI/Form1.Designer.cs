@@ -228,11 +228,12 @@
             // 
             // updateLiveCode
             // 
+            this.updateLiveCode.Interval = 200;
             this.updateLiveCode.Tick += new System.EventHandler(this.updateLiveCode_Tick);
             // 
             // editorWrite
             // 
-            this.editorWrite.Interval = 600;
+            this.editorWrite.Interval = 700;
             this.editorWrite.Tick += new System.EventHandler(this.editorWrite_Tick);
             // 
             // Form1

@@ -1,13 +1,15 @@
 ﻿using CIARELiveShareAPI.Utils;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.SignalR;
-using System.Diagnostics;
 
 namespace CIARELiveShareAPI.Hubs;
 
 public class LiveShare : Hub
 {
+    /// <summary>
+    /// Send/Receive code to connection id using speficic session ID attashed
+    /// </summary>
+    /// <param name="sessionId"></param>
+    /// <param name="code"></param>
     public void GetSendCode(string sessionId, string code)
     {
         try
@@ -26,7 +28,6 @@ public class LiveShare : Hub
                 if (sessionKey == sessionId && con != connectionId)
                 {
                     Clients.Client(con).SendAsync("GetSend", code);
-                  //  Console.WriteLine($"Sent to: {con}");
                 }
             }
         }

@@ -1,16 +1,7 @@
-using CIARELiveShareAPI.Data;
 using CIARELiveShareAPI.Hubs;
-using CIARELiveShareAPI.Utils;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Components.Web;
+
 using Microsoft.AspNetCore.ResponseCompression;
-using Microsoft.AspNetCore.SignalR;
-using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.Options;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authorization;
-using System.Security.Claims;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -45,5 +36,4 @@ app.UseRouting();
 app.MapBlazorHub();
 app.MapHub<LiveShare>("/live");
 app.MapFallbackToPage("/_Host");
-
 app.Run();

@@ -1,6 +1,7 @@
 ﻿using CIARELiveShareAPI.Utils;
 using Microsoft.AspNetCore.SignalR;
 
+
 namespace CIARELiveShareAPI.Hubs;
 
 public class LiveShare : Hub
@@ -25,9 +26,9 @@ public class LiveShare : Hub
             {
                 string sessionKey = sessionCon.Split('|')[0];
                 string con = sessionCon.Split('|')[1];
-                if (sessionKey == sessionId && con != connectionId)
+                if (sessionKey == sessionId && con != connectionId && !CodeCheck(code))
                 {
-                    Clients.Client(con).SendAsync("GetSend", code, lineNumber);
+                    Clients.Client(con).SendAsync("GetSend", code, lineNumber, connectionId);
                 }
             }
         }
@@ -38,7 +39,17 @@ public class LiveShare : Hub
     }
 
     /// <summary>
-    /// Remove patern from list on disconnect.
+    /// Check income connetion status.
+    /// </summary>
+    /// <param name="code"></param>
+    /// <returns></returns>
+    private bool CodeCheck(string code)
+    {
+        return (code == "connected" || code == "reconnected");
+    }
+
+    /// <summary>
+    /// Remove patern from list on disconnect and display disconnected client in console.
     /// </summary>
     /// <param name="exception"></param>
     /// <returns></returns>
@@ -57,7 +68,10 @@ public class LiveShare : Hub
         await base.OnDisconnectedAsync(exception);
     }
 
-
+    /// <summary>
+    /// Display connected client in console.
+    /// </summary>
+    /// <returns></returns>
     public override async Task OnConnectedAsync()
     {
         Console.WriteLine($"{Context.ConnectionId} - Connected");

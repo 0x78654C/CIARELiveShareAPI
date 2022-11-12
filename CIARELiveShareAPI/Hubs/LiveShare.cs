@@ -55,7 +55,6 @@ public class LiveShare : Hub
     /// <returns></returns>
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
-        Console.WriteLine($"{Context.ConnectionId} - Disconnected");
         try
         {
             if (GlobalVariables.listKeys.Count > 0)
@@ -66,15 +65,5 @@ public class LiveShare : Hub
             Console.WriteLine(ex);
         }
         await base.OnDisconnectedAsync(exception);
-    }
-
-    /// <summary>
-    /// Display connected client in console.
-    /// </summary>
-    /// <returns></returns>
-    public override async Task OnConnectedAsync()
-    {
-        Console.WriteLine($"{Context.ConnectionId} - Connected");
-        await base.OnConnectedAsync();
     }
 }

@@ -1,3 +1,5 @@
 # CIARELiveShareAPI
 
-API for code live share in CIARE text editor. Work in progress
+Mimimal API for Live Share feature in CIARE text editor. 
+
+CIARE project: https://github.com/0x78654C/CIARE/

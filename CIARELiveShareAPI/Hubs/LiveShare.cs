@@ -20,32 +20,72 @@ public class LiveShare : Hub
             var countSessionIds = listKeys.Where(x => x.Contains(sessionId)).Count();
             var countId = listKeys.Where(x => x.Contains(connectionId)).Count();
             var patern = $"{sessionId}|{connectionId}";
+            SendHostData(sessionId, code, connectionId);
             if (countSessionIds < 2 && countId < 1)
                 listKeys.Add(patern);
             foreach (var sessionCon in listKeys)
             {
                 string sessionKey = sessionCon.Split('|')[0];
                 string con = sessionCon.Split('|')[1];
-                if (sessionKey == sessionId && con != connectionId && !CodeCheck(code))
+                if (sessionKey == sessionId && con != connectionId)
                 {
                     Clients.Client(con).SendAsync("GetSend", code, lineNumber, connectionId);
                 }
             }
         }
-        catch (Exception ex)
+        catch { }
+    }
+
+    /// <summary>
+    /// Store code from live share host on firt connection
+    /// </summary>
+    /// <param name="sessionId"></param>
+    /// <param name="data"></param>
+    /// <param name="connectionId"></param>
+    private void SendHostData(string sessionId, string data, string connectionId)
+    {
+        var hostData = GlobalVariables.hostData;
+        if (data != "remote")
         {
-            Console.WriteLine(ex.ToString());
+            if (!hostData.ContainsKey(sessionId))
+            {
+                hostData.Add(sessionId, data);
+            }
+        }
+        else
+        {
+            foreach (var sId in hostData)
+            {
+                if (sId.Key == sessionId)
+                {
+                    Clients.Client(connectionId).SendAsync("GetSend", sId.Value, 0, connectionId);
+                    hostData.Remove(sId.Key);
+                }
+            }
         }
     }
 
     /// <summary>
-    /// Check income connetion status.
+    /// Remove data from dictionary on client disconnect.
     /// </summary>
-    /// <param name="code"></param>
-    /// <returns></returns>
-    private bool CodeCheck(string code)
+    /// <param name="connectionID"></param>
+    private void RemoveHostData(string connectionID)
     {
-        return (code == "connected" || code == "reconnected");
+        string sId = string.Empty;
+        var listKeys = GlobalVariables.listKeys;
+        foreach (var key in listKeys)
+        {
+            if (key.Contains(connectionID))
+                sId = key;
+        }
+        sId = sId.Split('|')[0];
+        foreach (var s in GlobalVariables.hostData)
+        {
+            if (s.Key.Contains(sId))
+            {
+                GlobalVariables.hostData.Remove(s.Key);
+            }
+        }
     }
 
     /// <summary>
@@ -57,13 +97,14 @@ public class LiveShare : Hub
     {
         try
         {
+            var connectionId = Context.ConnectionId;
+            RemoveHostData(connectionId);
             if (GlobalVariables.listKeys.Count > 0)
-                GlobalVariables.listKeys.RemoveAll(x => x.Contains(Context.ConnectionId));
+                GlobalVariables.listKeys.RemoveAll(x => x.Contains(connectionId));
+
         }
-        catch (Exception ex)
-        {
-            Console.WriteLine(ex);
-        }
+        catch { }
+
         await base.OnDisconnectedAsync(exception);
     }
 }

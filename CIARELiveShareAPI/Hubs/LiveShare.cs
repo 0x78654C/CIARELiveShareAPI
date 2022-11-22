@@ -11,7 +11,7 @@ public class LiveShare : Hub
     /// </summary>
     /// <param name="sessionId"></param>
     /// <param name="code"></param>
-    public void GetSendCode(string sessionId, string code, int lineNumber)
+    public void GetSendCode(string sessionId, string code, string position)
     {
         try
         {
@@ -28,9 +28,7 @@ public class LiveShare : Hub
                 string sessionKey = sessionCon.Split('|')[0];
                 string con = sessionCon.Split('|')[1];
                 if (sessionKey == sessionId && con != connectionId)
-                {
-                    Clients.Client(con).SendAsync("GetSend", code, lineNumber, connectionId);
-                }
+                    Clients.Client(con).SendAsync("GetSend", code, position, connectionId);
             }
         }
         catch { }

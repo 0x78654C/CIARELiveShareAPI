@@ -56,7 +56,7 @@ public class LiveShare : Hub
             {
                 if (sId.Key == sessionId)
                 {
-                    Clients.Client(connectionId).SendAsync("GetSend", sId.Value, 0, connectionId);
+                    Clients.Client(connectionId).SendAsync("GetSend", sId.Value, "0|0", connectionId);
                     hostData.Remove(sId.Key);
                 }
             }

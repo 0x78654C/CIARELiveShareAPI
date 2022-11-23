@@ -1,5 +1,4 @@
 using CIARELiveShareAPI.Hubs;
-
 using Microsoft.AspNetCore.ResponseCompression;
 
 
@@ -28,8 +27,6 @@ if (!app.Environment.IsDevelopment())
     app.UseHttpsRedirection();
 }
 
-
-app.UseStaticFiles();
 app.UseRouting();
 app.MapHub<LiveShare>("/live");
 app.Run();

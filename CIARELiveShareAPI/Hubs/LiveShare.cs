@@ -9,33 +9,34 @@ public class LiveShare : Hub
     /// <summary>
     /// Send/Receive code to connection id using speficic session ID attashed
     /// </summary>
-    /// <param name="sessionId"></param>
-    /// <param name="code"></param>
     public void GetSendCode(string sessionId, string code, string position)
     {
         try
         {
             var connectionId = Context.ConnectionId;
             var listKeys = GlobalVariables.listKeys;
-            var countSessionIds = listKeys.Where(x => x.Contains(sessionId)).Count();
-            var countId = listKeys.Where(x => x.Contains(connectionId)).Count();
-            var patern = $"{sessionId}|{connectionId}";
+            var countSessionIds = listKeys.Count(x => x.Contains(sessionId));
+            var countId = listKeys.Count(x => x.Contains(connectionId));
+            var pattern = $"{sessionId}|{connectionId}";
             SendHostData(sessionId, code, connectionId);
             if (countSessionIds < 2 && countId < 1)
-                listKeys.Add(patern);
-            foreach (var sessionCon in listKeys)
+                listKeys.Add(pattern);
+            foreach (var item in listKeys.Select(x=> x.Split('|')))
             {
-                string sessionKey = sessionCon.Split('|')[0];
-                string con = sessionCon.Split('|')[1];
+                var sessionKey = item.First();
+                var con = item[1];
                 if (sessionKey == sessionId && con != connectionId)
                     Clients.Client(con).SendAsync("GetSend", code, position, connectionId);
             }
         }
-        catch { }
+        catch
+        {
+            // ignored
+        }
     }
 
     /// <summary>
-    /// Store code from live share host on firt connection
+    /// Store code from live share host on first connection
     /// </summary>
     /// <param name="sessionId"></param>
     /// <param name="data"></param>
@@ -49,49 +50,36 @@ public class LiveShare : Hub
             {
                 hostData.Add(sessionId, data);
             }
+            return;
         }
-        else
+
+        if (GlobalVariables.hostData.TryGetValue(sessionId, out var value))
         {
-            foreach (var sId in hostData)
-            {
-                if (sId.Key == sessionId)
-                {
-                    Clients.Client(connectionId).SendAsync("GetSend", sId.Value, "0|0", connectionId);
-                    hostData.Remove(sId.Key);
-                }
-            }
+            Clients.Client(connectionId).SendAsync("GetSend", value, "0|0", connectionId);
+            hostData.Remove(sessionId);
         }
     }
 
     /// <summary>
     /// Remove data from dictionary on client disconnect.
     /// </summary>
-    /// <param name="connectionID"></param>
-    private void RemoveHostData(string connectionID)
+    /// <param name="connectionId"></param>
+    private static void RemoveHostData(string connectionId)
     {
-        string sId = string.Empty;
-        var listKeys = GlobalVariables.listKeys;
-        foreach (var key in listKeys)
+        string sId = GlobalVariables.listKeys.FirstOrDefault(x => x.Contains(connectionId))?.Split('|').First();
+        if (sId is null) return;
+        foreach (var s in GlobalVariables.hostData.Where(x => x.Key.Contains(sId)))
         {
-            if (key.Contains(connectionID))
-                sId = key;
-        }
-        sId = sId.Split('|')[0];
-        foreach (var s in GlobalVariables.hostData)
-        {
-            if (s.Key.Contains(sId))
-            {
-                GlobalVariables.hostData.Remove(s.Key);
-            }
+            GlobalVariables.hostData.Remove(s.Key);
         }
     }
 
     /// <summary>
-    /// Remove patern from list on disconnect and display disconnected client in console.
+    /// Remove pattern from list on disconnect and display disconnected client in console.
     /// </summary>
     /// <param name="exception"></param>
     /// <returns></returns>
-    public override async Task OnDisconnectedAsync(Exception? exception)
+    public override async Task OnDisconnectedAsync(Exception exception)
     {
         try
         {
@@ -101,7 +89,10 @@ public class LiveShare : Hub
                 GlobalVariables.listKeys.RemoveAll(x => x.Contains(connectionId));
 
         }
-        catch { }
+        catch
+        {
+            // ignored
+        }
 
         await base.OnDisconnectedAsync(exception);
     }

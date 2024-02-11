@@ -2,6 +2,7 @@ using CIARELiveShareAPI.Hubs;
 using Microsoft.AspNetCore.ResponseCompression;
 
 
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -15,6 +16,7 @@ builder.Services.AddResponseCompression(opts =>
 builder.Services.AddSignalR(hubOptions =>
 {
     hubOptions.KeepAliveInterval = TimeSpan.FromSeconds(20.00);
+    hubOptions.MaximumReceiveMessageSize = 100000000;//100mb
 });
 
 var app = builder.Build();
@@ -28,5 +30,9 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseRouting();
-app.MapHub<LiveShare>("/live");
+app.MapHub<LiveShare>("/live",opts=>
+{
+    opts.ApplicationMaxBufferSize = 100000000; //100mb
+    opts.TransportMaxBufferSize = 100000000; //100mb
+});
 app.Run();

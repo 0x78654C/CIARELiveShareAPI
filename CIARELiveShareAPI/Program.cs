@@ -35,4 +35,10 @@ app.MapHub<LiveShare>("/live",opts=>
     opts.ApplicationMaxBufferSize = 100000000; //100mb
     opts.TransportMaxBufferSize = 100000000; //100mb
 });
+
+app.MapGet("/ping", () =>
+{
+    return Results.Ok("Pong");
+});
+
 app.Run();

@@ -16,7 +16,7 @@ builder.Services.AddResponseCompression(opts =>
 builder.Services.AddSignalR(hubOptions =>
 {
     hubOptions.KeepAliveInterval = TimeSpan.FromSeconds(20.00);
-    hubOptions.MaximumReceiveMessageSize = 100000000;//100mb
+    hubOptions.MaximumReceiveMessageSize = 5_000_000; // 5MB
 });
 
 var app = builder.Build();
@@ -32,8 +32,8 @@ if (!app.Environment.IsDevelopment())
 app.UseRouting();
 app.MapHub<LiveShare>("/live",opts=>
 {
-    opts.ApplicationMaxBufferSize = 100000000; //100mb
-    opts.TransportMaxBufferSize = 100000000; //100mb
+    opts.ApplicationMaxBufferSize = 10_000_000; // 10MB
+    opts.TransportMaxBufferSize = 10_000_000; // 10MB
 });
 
 app.MapGet("/ping", () =>

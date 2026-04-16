@@ -30,7 +30,7 @@ namespace TestAPI.Utils
             collection += useUpper ? Alphabet.ToUpper() : "";
             collection += useSymbols ? Symbols : "";
 
-            return GeneratePassword(collection.OrderBy(r => Guid.NewGuid().GetHashCode()).ToArray(), 0, length, useUpper, useLower, useSymbols, useNumbers);
+            return GeneratePassword(collection.OrderBy(r => RandomNumberGenerator.GetInt32(int.MaxValue)).ToArray(), 0, length, useUpper, useLower, useSymbols, useNumbers);
         }
 
         private static string GeneratePassword(char[] chars, int attempt, int length = 16, bool useUpper = true, bool useLower = true,
@@ -38,7 +38,7 @@ namespace TestAPI.Utils
         {
 
             var bytes = new byte[length * 8];
-            new RNGCryptoServiceProvider().GetBytes(bytes);
+            RandomNumberGenerator.Fill(bytes);
             var result = new char[length];
             for (int i = 0; i < length; i++)
             {

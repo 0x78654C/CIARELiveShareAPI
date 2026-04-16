@@ -1,97 +1,111 @@
 ﻿using CIARELiveShareAPI.Utils;
 using Microsoft.AspNetCore.SignalR;
 
-
 namespace CIARELiveShareAPI.Hubs;
 
 public class LiveShare : Hub
 {
-    /// <summary>
-    /// Send/Receive code to connection id using speficic session ID attashed
-    /// </summary>
-    public void GetSendCode(string sessionId, string code, string position)
+    private readonly ILogger<LiveShare> _logger;
+
+    private const int MaxSessionIdLength = 128;
+    private const int MaxCodeLength = 5_000_000;
+    private const int MaxPositionLength = 64;
+
+    public LiveShare(ILogger<LiveShare> logger)
     {
+        _logger = logger;
+    }
+
+    /// <summary>
+    /// Send/Receive code to connection id using specific session ID attached.
+    /// </summary>
+    public async Task GetSendCode(string sessionId, string code, string position)
+    {
+        if (string.IsNullOrEmpty(sessionId) || sessionId.Length > MaxSessionIdLength)
+            return;
+        if (code?.Length > MaxCodeLength)
+            return;
+        if (position?.Length > MaxPositionLength)
+            return;
+
         try
         {
             var connectionId = Context.ConnectionId;
-            var listKeys = GlobalVariables.listKeys;
-            var countSessionIds = listKeys.Count(x => x.Contains(sessionId));
-            var countId = listKeys.Count(x => x.Contains(connectionId));
-            var pattern = $"{sessionId}|{connectionId}";
-            SendHostData(sessionId, code, connectionId);
-            if (countSessionIds < 2 && countId < 1)
-                listKeys.Add(pattern);
-            foreach (var item in listKeys.Select(x=> x.Split('|')))
+            var connections = GlobalVariables.connections;
+
+            await SendHostData(sessionId, code, connectionId);
+
+            // Register connection if not already registered
+            if (!connections.ContainsKey(connectionId))
             {
-                var sessionKey = item.First();
-                var con = item[1];
-                if (sessionKey == sessionId && con != connectionId)
-                    Clients.Client(con).SendAsync("GetSend", code, position, connectionId);
+                var sessionConnectionCount = connections.Count(x => x.Value == sessionId);
+                if (sessionConnectionCount < GlobalVariables.MaxConnectionsPerSession)
+                {
+                    var activeSessionCount = connections.Values.Distinct().Count();
+                    if (activeSessionCount < GlobalVariables.MaxSessions || connections.Values.Contains(sessionId))
+                        connections.TryAdd(connectionId, sessionId);
+                }
+            }
+
+            foreach (var kvp in connections)
+            {
+                if (kvp.Value == sessionId && kvp.Key != connectionId)
+                    await Clients.Client(kvp.Key).SendAsync("GetSend", code, position, connectionId);
             }
         }
-        catch
+        catch (Exception ex)
         {
-            // ignored
+            _logger.LogError(ex, "Error in GetSendCode for session {SessionId}", sessionId);
         }
     }
 
     /// <summary>
-    /// Store code from live share host on first connection
+    /// Store code from live share host on first connection.
     /// </summary>
-    /// <param name="sessionId"></param>
-    /// <param name="data"></param>
-    /// <param name="connectionId"></param>
-    private void SendHostData(string sessionId, string data, string connectionId)
+    private async Task SendHostData(string sessionId, string data, string connectionId)
     {
         var hostData = GlobalVariables.hostData;
         if (data != "remote")
         {
-            if (!hostData.ContainsKey(sessionId))
-            {
-                hostData.Add(sessionId, data);
-            }
+            hostData.TryAdd(sessionId, data);
             return;
         }
 
-        if (GlobalVariables.hostData.TryGetValue(sessionId, out var value))
+        if (hostData.TryRemove(sessionId, out var value))
         {
-            Clients.Client(connectionId).SendAsync("GetSend", value, "0|0", connectionId);
-            hostData.Remove(sessionId);
+            await Clients.Client(connectionId).SendAsync("GetSend", value, "0|0", connectionId);
         }
     }
 
     /// <summary>
     /// Remove data from dictionary on client disconnect.
     /// </summary>
-    /// <param name="connectionId"></param>
     private static void RemoveHostData(string connectionId)
     {
-        string sId = GlobalVariables.listKeys.FirstOrDefault(x => x.Contains(connectionId))?.Split('|').First();
-        if (sId is null) return;
-        foreach (var s in GlobalVariables.hostData.Where(x => x.Key.Contains(sId)))
-        {
-            GlobalVariables.hostData.Remove(s.Key);
-        }
+        if (!GlobalVariables.connections.TryGetValue(connectionId, out var sessionId))
+            return;
+
+        var otherConnectionsExist = GlobalVariables.connections
+            .Any(x => x.Value == sessionId && x.Key != connectionId);
+
+        if (!otherConnectionsExist)
+            GlobalVariables.hostData.TryRemove(sessionId, out _);
     }
 
     /// <summary>
-    /// Remove pattern from list on disconnect and display disconnected client in console.
+    /// Remove connection on disconnect and clean up session data.
     /// </summary>
-    /// <param name="exception"></param>
-    /// <returns></returns>
     public override async Task OnDisconnectedAsync(Exception exception)
     {
         try
         {
             var connectionId = Context.ConnectionId;
             RemoveHostData(connectionId);
-            if (GlobalVariables.listKeys.Count > 0)
-                GlobalVariables.listKeys.RemoveAll(x => x.Contains(connectionId));
-
+            GlobalVariables.connections.TryRemove(connectionId, out _);
         }
-        catch
+        catch (Exception ex)
         {
-            // ignored
+            _logger.LogError(ex, "Error in OnDisconnectedAsync");
         }
 
         await base.OnDisconnectedAsync(exception);

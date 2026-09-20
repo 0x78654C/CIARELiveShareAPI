@@ -101,7 +101,13 @@ public class LiveShare : Hub
         {
             var connectionId = Context.ConnectionId;
             RemoveHostData(connectionId);
-            GlobalVariables.connections.TryRemove(connectionId, out _);
+            if (GlobalVariables.connections.TryRemove(connectionId, out var sessionId))
+            {
+                var participants = GlobalVariables.connections
+                    .Where(connection => connection.Value == sessionId)
+                    .Select(connection => connection.Key).ToArray();
+                await Clients.Clients(participants).SendAsync("UserDisconnected", connectionId);
+            }
         }
         catch (Exception ex)
         {
